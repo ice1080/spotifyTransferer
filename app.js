@@ -18,17 +18,18 @@ var client_id = 'NOT_SET';
 var client_secret = 'NOT_SET';
 var redirect_uri = 'http://localhost:8888/callback'; // Your redirect uri
 
-try {
-  client_id = fs.readFileSync('clientId.txt', 'utf8');
-} catch(e) {
-  console.log('Error:', e.stack);
+function readSecretsFile(fileName) {
+  let content = '';
+  try {
+    content = fs.readFileSync(fileName, 'utf8').replace('\n', '');
+  } catch(e) {
+    console.log('Error:', e.stack);
+  }
+  return content;
 }
 
-try {
-  client_secret = fs.readFileSync('clientSecret.txt', 'utf8');
-} catch(e) {
-  console.log('Error:', e.stack);
-}
+client_id = readSecretsFile('clientId.txt');
+client_secret = readSecretsFile('clientSecret.txt');
 
 /**
  * Generates a random string containing numbers and letters
@@ -102,8 +103,16 @@ app.get('/callback', function(req, res) {
     request.post(authOptions, function(error, response, body) {
       if (!error && response.statusCode === 200) {
 
+
+
+
+
         var access_token = body.access_token,
             refresh_token = body.refresh_token;
+
+
+
+
 
         var options = {
           url: 'https://api.spotify.com/v1/me',
