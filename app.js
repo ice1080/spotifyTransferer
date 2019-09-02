@@ -1,10 +1,6 @@
 /**
- * This is an example of a basic node.js script that performs
- * the Authorization Code oAuth2 flow to authenticate against
- * the Spotify Accounts.
- *
- * For more information, read
- * https://developer.spotify.com/web-api/authorization-guide/#authorization_code_flow
+ * This is a simple node.js script that does some stuff
+ * with your playlists.
  */
 
 var express = require('express'); // Express web server framework
@@ -102,17 +98,9 @@ app.get('/callback', function(req, res) {
 
     request.post(authOptions, function(error, response, body) {
       if (!error && response.statusCode === 200) {
-
-
-
-
-
+        
         var access_token = body.access_token,
             refresh_token = body.refresh_token;
-
-
-
-
 
         var options = {
           url: 'https://api.spotify.com/v1/me',
@@ -161,6 +149,50 @@ app.get('/refresh_token', function(req, res) {
       res.send({
         'access_token': access_token
       });
+    }
+  });
+});
+
+// todo remove this callback hell
+app.get('/make_transfer', function(req, res) {
+  var access_token = req.query.access_token;
+  var profile_id = req.query.profile_id;
+
+
+
+  // todo change this to an input variable on the screen
+  var preferred_playlist_name = 'Collection3';
+
+  
+  
+  var playlistsOptions = {
+    url: 'https://api.spotify.com/v1/users/' + profile_id + '/playlists',
+    headers: { 'Authorization': 'Bearer ' + access_token },
+    json: true
+  };
+
+  request.get(playlistsOptions, function(error, response, body) {
+    if (!error && response.statusCode === 200 && body) {
+
+      var playlist_id = '';
+      
+      for (i in body.items) {
+        var item = body.items[i];
+        if (item.name == preferred_playlist_name) {
+          playlist_id = item.id;
+        }
+      }
+
+      if (playlist_id) {
+        // retrieve list of albums in saved albums
+        // for each album's tracks, append to playlist by id from above
+        
+      } else {
+        console.error('playlist does not exist under name: ' + preferred_playlist_name);
+      }
+    } else {
+      console.error(error);
+      console.log(response.statusCode);
     }
   });
 });
