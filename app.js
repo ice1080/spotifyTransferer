@@ -9,6 +9,7 @@ var cors = require('cors');
 var querystring = require('querystring');
 var cookieParser = require('cookie-parser');
 var fs = require('fs');
+import { refreshToken, getSavedAlbums, getPlaylistId } from './SpotifyApiHelper';
 
 var client_id = 'NOT_SET';
 var client_secret = 'NOT_SET';
@@ -26,6 +27,10 @@ function readSecretsFile(fileName) {
 
 client_id = readSecretsFile('clientId.txt');
 client_secret = readSecretsFile('clientSecret.txt');
+
+function getAuthString() {
+  return new Buffer(client_id + ':' + client_secret).toString('base64');
+}
 
 /**
  * Generates a random string containing numbers and letters
@@ -91,7 +96,7 @@ app.get('/callback', function(req, res) {
         grant_type: 'authorization_code'
       },
       headers: {
-        'Authorization': 'Basic ' + (new Buffer(client_id + ':' + client_secret).toString('base64'))
+        'Authorization': 'Basic ' + (getAuthString())
       },
       json: true
     };
@@ -135,7 +140,7 @@ app.get('/refresh_token', function(req, res) {
   var refresh_token = req.query.refresh_token;
   var authOptions = {
     url: 'https://accounts.spotify.com/api/token',
-    headers: { 'Authorization': 'Basic ' + (new Buffer(client_id + ':' + client_secret).toString('base64')) },
+    headers: { 'Authorization': 'Basic ' + getAuthString() },
     form: {
       grant_type: 'refresh_token',
       refresh_token: refresh_token
@@ -153,49 +158,67 @@ app.get('/refresh_token', function(req, res) {
   });
 });
 
-// todo remove this callback hell
-app.get('/make_transfer', function(req, res) {
+
+
+app.get('/make_transfer', async function(req, res) {
   var access_token = req.query.access_token;
-  var profile_id = req.query.profile_id;
-
-
+  var refresh_token = req.query.refresh_token;
+  var profileId = req.query.profile_id;
 
   // todo change this to an input variable on the screen
   var preferred_playlist_name = 'Collection3';
 
+  // refresh the token
   
+  refreshToken(getAuthString(), refresh_token);
   
-  var playlistsOptions = {
-    url: 'https://api.spotify.com/v1/users/' + profile_id + '/playlists',
-    headers: { 'Authorization': 'Bearer ' + access_token },
-    json: true
-  };
+  var playlistId = await getPlaylistId(access_token, profileId, preferred_playlist_name);
 
-  request.get(playlistsOptions, function(error, response, body) {
-    if (!error && response.statusCode === 200 && body) {
+  console.log(playlistId);
 
-      var playlist_id = '';
-      
-      for (i in body.items) {
-        var item = body.items[i];
-        if (item.name == preferred_playlist_name) {
-          playlist_id = item.id;
-        }
-      }
-
-      if (playlist_id) {
-        // retrieve list of albums in saved albums
-        // for each album's tracks, append to playlist by id from above
-        
-      } else {
-        console.error('playlist does not exist under name: ' + preferred_playlist_name);
-      }
-    } else {
-      console.error(error);
-      console.log(response.statusCode);
-    }
-  });
+  getSavedAlbums(access_token, profileId);
 });
+
+
+// // todo remove this callback hell
+// app.get('/make_transfer', function(req, res) {
+//   var access_token = req.query.access_token;
+//   var profile_id = req.query.profile_id;
+
+//   // todo change this to an input variable on the screen
+//   var preferred_playlist_name = 'Collection3';
+
+//   var playlistsOptions = {
+//     url: 'https://api.spotify.com/v1/users/' + profile_id + '/playlists',
+//     headers: { 'Authorization': 'Bearer ' + access_token },
+//     json: true
+//   };
+
+//   request.get(playlistsOptions, function(error, response, body) {
+//     if (!error && response.statusCode === 200 && body) {
+
+//       var playlist_id = '';
+      
+//       for (i in body.items) {
+//         var item = body.items[i];
+//         if (item.name == preferred_playlist_name) {
+//           playlist_id = item.id;
+//         }
+//       }
+
+//       if (playlist_id) {
+//         // retrieve list of albums in saved albums
+//         // for each album's tracks, append to playlist by id from above
+        
+//       } else {
+//         console.error('playlist does not exist under name: ' + preferred_playlist_name);
+//       }
+//     } else {
+//       console.error(error);
+//       console.log(response.statusCode);
+//     }
+//   });
+// });
 
 console.log('Listening on 8888');
 app.listen(8888);
