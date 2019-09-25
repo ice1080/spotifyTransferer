@@ -9,7 +9,7 @@ var cors = require('cors');
 var querystring = require('querystring');
 var cookieParser = require('cookie-parser');
 var fs = require('fs');
-import { refreshToken, getSavedAlbums, getPlaylistId } from './SpotifyApiHelper';
+import { refreshToken, getSavedAlbums, getPlaylistId, getAlbumTracks } from './SpotifyApiHelper';
 
 var client_id = 'NOT_SET';
 var client_secret = 'NOT_SET';
@@ -20,7 +20,7 @@ function readSecretsFile(fileName) {
   try {
     content = fs.readFileSync(fileName, 'utf8').replace('\n', '');
   } catch(e) {
-    console.log('Error:', e.stack);
+    console.error('Error:', e.stack);
   }
   return content;
 }
@@ -74,7 +74,7 @@ app.get('/login', function(req, res) {
 
 app.get('/callback', function(req, res) {
 
-  // your application requests refresh and access tokens
+  // your application requests refresh and and access tokens
   // after checking the state parameter
 
   var code = req.query.code || null;
@@ -114,6 +114,7 @@ app.get('/callback', function(req, res) {
         };
 
         // use the access token to access the Spotify Web API
+        // todo what is this for?
         request.get(options, function(error, response, body) {
           console.log(body);
         });
@@ -176,49 +177,28 @@ app.get('/make_transfer', async function(req, res) {
 
   console.log(playlistId);
 
-  getSavedAlbums(access_token, profileId);
+  var savedAlbums = await getSavedAlbums(access_token, profileId);
+
+  // console.log(savedAlbums[0].album.tracks.items[0].id);
+
+  var testAlbum = savedAlbums[0];
+  getAlbumTracks(testAlbum).forEach(function(track) {
+    console.log(track.name);
+  });
+  
+  // savedAlbums.forEach(function(album) {
+  //   // console.log(album.album.tracks.items);
+  //   getAlbumTracks(album).forEach(function(track) {
+  //     // console.log(track.id);
+      
+  //   });
+  // });
+
+  // todo for each track, transfer to collection, determine if already saved, and unsave
+  // print each track? or album and artist
+  // todo then unsave the album
 });
 
-
-// // todo remove this callback hell
-// app.get('/make_transfer', function(req, res) {
-//   var access_token = req.query.access_token;
-//   var profile_id = req.query.profile_id;
-
-//   // todo change this to an input variable on the screen
-//   var preferred_playlist_name = 'Collection3';
-
-//   var playlistsOptions = {
-//     url: 'https://api.spotify.com/v1/users/' + profile_id + '/playlists',
-//     headers: { 'Authorization': 'Bearer ' + access_token },
-//     json: true
-//   };
-
-//   request.get(playlistsOptions, function(error, response, body) {
-//     if (!error && response.statusCode === 200 && body) {
-
-//       var playlist_id = '';
-      
-//       for (i in body.items) {
-//         var item = body.items[i];
-//         if (item.name == preferred_playlist_name) {
-//           playlist_id = item.id;
-//         }
-//       }
-
-//       if (playlist_id) {
-//         // retrieve list of albums in saved albums
-//         // for each album's tracks, append to playlist by id from above
-        
-//       } else {
-//         console.error('playlist does not exist under name: ' + preferred_playlist_name);
-//       }
-//     } else {
-//       console.error(error);
-//       console.log(response.statusCode);
-//     }
-//   });
-// });
 
 console.log('Listening on 8888');
 app.listen(8888);

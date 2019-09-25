@@ -34,9 +34,11 @@ export async function getSavedAlbums(access_token, profile_id) {
   });
   const json = await response.json();
 
-  console.log(json);
-  console.log('next');
-  console.log(json.items);
+  // let firstAlbum = json.items[0].album;
+  // console.log(firstAlbum);
+  // console.log(firstAlbum.tracks);
+
+  return json.items;
 };
 
 export async function refreshToken(authString, refreshToken) {
@@ -48,7 +50,13 @@ export async function refreshToken(authString, refreshToken) {
       refresh_token: refreshToken
     }
   });
-  console.log(response);
+  // console.log(response);
   const json = await response.json();
-  console.log(json);
+  // console.log(json);
 };
+
+export function getAlbumTracks(album) {
+  return album.album.tracks.items;
+};
+
+
