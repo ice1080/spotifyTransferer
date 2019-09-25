@@ -55,8 +55,31 @@ export async function refreshToken(authString, refreshToken) {
   // console.log(json);
 };
 
-export function getAlbumTracks(album) {
-  return album.album.tracks.items;
+export function getAlbumTrackIds(album) {
+  return album.album.tracks.items.map(track => track.name);
 };
 
+export function transferTracksToPlaylist(trackList, playlistId) {
+  // POST /playlists/{playlist_id}/tracks
+  // uris=spotify:track:uri1,spotify:track:uri2
+  // OR
+  // body {"uris": ["spotify:track:uri1","spotify:track:uri2"]}
+};
 
+export function doesLibraryContainTrack(trackId) {
+  // GET /users/{profile_id}/tracks/contains?ids=id1,id2
+};
+
+export function removeTrackFromLibrary(trackId) {
+  // DELETE /users/{profile_id}/tracks
+  // ids=id1,id2
+  // OR
+  // body ["id1", "id2"]
+};
+
+export function removeAlbumFromLibrary(albumId) {
+  // DELETE /users/{profile_id}/albums
+  // ids=id1,id2
+  // OR
+  // body ["id1", "id2"]
+};

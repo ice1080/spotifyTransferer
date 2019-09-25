@@ -9,7 +9,7 @@ var cors = require('cors');
 var querystring = require('querystring');
 var cookieParser = require('cookie-parser');
 var fs = require('fs');
-import { refreshToken, getSavedAlbums, getPlaylistId, getAlbumTracks } from './SpotifyApiHelper';
+import { refreshToken, getSavedAlbums, getPlaylistId, getAlbumTrackIds } from './SpotifyApiHelper';
 
 var client_id = 'NOT_SET';
 var client_secret = 'NOT_SET';
@@ -175,21 +175,18 @@ app.get('/make_transfer', async function(req, res) {
   
   var playlistId = await getPlaylistId(access_token, profileId, preferred_playlist_name);
 
-  console.log(playlistId);
+  console.log('Playlist \'' + preferred_playlist_name + '\' id: ' + playlistId);
 
   var savedAlbums = await getSavedAlbums(access_token, profileId);
 
-  // console.log(savedAlbums[0].album.tracks.items[0].id);
-
   var testAlbum = savedAlbums[0];
-  getAlbumTracks(testAlbum).forEach(function(track) {
-    console.log(track.name);
-  });
+
+  // todo the next line is untested
+  // transferTracksToPlaylist(getAlbumTrackIds(testAlbum), playlistId);
   
   // savedAlbums.forEach(function(album) {
   //   // console.log(album.album.tracks.items);
-  //   getAlbumTracks(album).forEach(function(track) {
-  //     // console.log(track.id);
+  //   getAlbumTrackIds(album)
       
   //   });
   // });
