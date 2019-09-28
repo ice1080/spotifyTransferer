@@ -34,10 +34,6 @@ export async function getSavedAlbums(access_token, profile_id) {
   });
   const json = await response.json();
 
-  // let firstAlbum = json.items[0].album;
-  // console.log(firstAlbum);
-  // console.log(firstAlbum.tracks);
-
   return json.items;
 };
 
@@ -52,18 +48,18 @@ export async function refreshToken(authString, refreshToken) {
   });
   // console.log(response);
   const json = await response.json();
-  // console.log(json);
+  console.log('new auth token received: ' + json);
 };
 
-export function getAlbumTrackIds(album) {
-  return album.album.tracks.items.map(track => track.name);
+export function getAlbumTracks(album) {
+  return album.album.tracks.items;
 };
 
 export function transferTracksToPlaylist(trackList, playlistId) {
   // POST /playlists/{playlist_id}/tracks
-  // uris=spotify:track:uri1,spotify:track:uri2
+  // uris=spotifyUri1,spotifyUri2
   // OR
-  // body {"uris": ["spotify:track:uri1","spotify:track:uri2"]}
+  // body {"uris": ["spotifyUri1","spotifyUri2"]}
 };
 
 export function doesLibraryContainTrack(trackId) {
