@@ -63,7 +63,7 @@
 
     <script id="controls-template" type="text/x-handlebars-template">
       <h2>Controls</h2>
-      <button class="btn btn-default" id="list-all-playlists">List all playlists</button>
+      <button class="btn btn-default" id="make-transfer">Make Transfer</button>
     </script>
 
     <script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0-alpha.1/handlebars.min.js"></script>
@@ -148,7 +148,7 @@
             });
           }, false);
 
-          document.getElementById('list-all-playlists').addEventListener('click', function() {
+          document.getElementById('make-transfer').addEventListener('click', function() {
             var profile_id = $('dt:contains(Id)').next().text();
             
             $.ajax({

@@ -124,7 +124,7 @@ app.get('/callback', function(req, res) {
         // use the access token to access the Spotify Web API
         // todo what is this for?
         request.get(options, function(error, response, body) {
-          console.log(body);
+          // console.log(body);
         });
 
         // we can also pass the token to the browser to make requests from there
@@ -147,9 +147,11 @@ app.get('/refresh_token', function(req, res) {
 
   // requesting access token from refresh token
   var refresh_token = req.query.refresh_token;
+  var authString = getAuthString();
+  
   var authOptions = {
     url: 'https://accounts.spotify.com/api/token',
-    headers: { 'Authorization': 'Basic ' + getAuthString() },
+    headers: { 'Authorization': 'Basic ' + authString },
     form: {
       grant_type: 'refresh_token',
       refresh_token: refresh_token
@@ -178,8 +180,7 @@ app.get('/make_transfer', async function(req, res) {
   var preferred_playlist_name = 'Collection3';
 
   // refresh the token
-  
-  refreshToken(getAuthString(), refresh_token);
+  console.log('test refresh token', await refreshToken(getAuthString(), refresh_token));
   
   var playlistId = await getPlaylistId(access_token, profileId, preferred_playlist_name);
 
@@ -189,15 +190,14 @@ app.get('/make_transfer', async function(req, res) {
 
   // temporary test:
   var testAlbum = savedAlbums[0];
-  console.log(getAlbumTracks(testAlbum));
+  // console.log(getAlbumTracks(testAlbum));
 
-  // todo the next line is untested
-  // transferTracksToPlaylist(getAlbumTracks(testAlbum), playlistId));
+  transferTracksToPlaylist(access_token, getAlbumTracks(testAlbum), playlistId);
   
   // savedAlbums.forEach(function(album) {
   //   // console.log(album.album.tracks.items);
   //   var trackIds = getAlbumTracks(album);
-  //   transferTracksToPlaylist(trackIds, playlistId);
+  //   (trackIds, playlistId);
       
   //   });
   // });
