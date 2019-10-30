@@ -80,7 +80,7 @@ export async function transferTracksToPlaylist(access_token, trackList, playlist
       Authorization: 'Bearer ' + access_token,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify(trackList.map(track => track.uri)),
+    body: JSON.stringify({uris: trackList.map(track => track.uri)}),
   });
   console.log('transferTracksToPlaylist response', response);
   const json = await response.json();
@@ -90,7 +90,9 @@ export async function transferTracksToPlaylist(access_token, trackList, playlist
 export async function doesLibraryContainTrack(profileId, trackId) {
   // GET /users/{profile_id}/tracks/contains?ids=id1,id2
   const response = await fetch(api + 'users/' + profileId + '/tracks/contains?' + trackId, {
-    
+    headers: {
+      Authorization: 'Bearer ' + access_token,
+    },
   });
   console.log('doesLibraryContainTrack response', response);
 };
