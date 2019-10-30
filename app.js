@@ -149,7 +149,7 @@ app.get('/refresh_token', function(req, res) {
   var refresh_token = req.query.refresh_token;
   var authString = getAuthString();
   
-  var authOptions = {
+  var refreshOptions = {
     url: 'https://accounts.spotify.com/api/token',
     headers: { 'Authorization': 'Basic ' + authString },
     form: {
@@ -159,7 +159,7 @@ app.get('/refresh_token', function(req, res) {
     json: true
   };
 
-  request.post(authOptions, function(error, response, body) {
+  request.post(refreshOptions, function(error, response, body) {
     if (!error && response.statusCode === 200) {
       var access_token = body.access_token;
       res.send({
@@ -180,11 +180,11 @@ app.get('/make_transfer', async function(req, res) {
   var preferred_playlist_name = 'Collection3';
 
   // refresh the token
-  console.log('test refresh token', await refreshToken(getAuthString(), refresh_token));
+  access_token = await refreshToken(getAuthString(), refresh_token);
   
   var playlistId = await getPlaylistId(access_token, profileId, preferred_playlist_name);
 
-  console.log('Playlist \'' + preferred_playlist_name + '\' id: ' + playlistId);
+  console.log("Playlist '" + preferred_playlist_name + "' id: " + playlistId);
 
   var savedAlbums = await getSavedAlbums(access_token, profileId);
 

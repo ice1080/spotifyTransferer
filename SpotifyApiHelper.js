@@ -1,8 +1,16 @@
-
 var fetch = require('node-fetch');
 var FormData = require('form-data');
-const acctsUrl = 'https://accounts.spotify.com/api/token';
+
+const tokenUrl = 'https://accounts.spotify.com/api/token';
 const api = 'https://api.spotify.com/v1/';
+
+export function getQueryParamsString(dataMap) {
+  var queryString = '?';
+  Object.keys(dataMap).forEach(function(key) {
+    queryString += key + '=' + dataMap[key] + '&';
+  });
+  return queryString;
+};
 
 export async function getPlaylistId(access_token, profile_id, playlistName) {
 
@@ -38,26 +46,23 @@ export async function getSavedAlbums(access_token, profile_id) {
 };
 
 export async function refreshToken(authString, refreshToken) {
-  // var authOptions = {
-  //   url: acctsUrl,
-  //   headers: { 'Authorization': 'Basic ' + authString }
-  // };
-  const formData = new FormData();
-  formData.append('grant_type', 'refresh_token');
-  formData.append('refresh_token', refreshToken);
-  const response = await fetch(acctsUrl, {
+  var data = {
+    grant_type: 'refresh_token',
+    refresh_token: refreshToken,
+  };
+  var url = tokenUrl + getQueryParamsString(data);
+
+  var response = await fetch(url, {
     headers: {
       Authorization: 'Basic ' + authString,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Accept': 'application/json',
     },
     method: 'POST',
-    body: formData,
-    json: true
   });
-  console.log('refreshToken response', response);
-  const json = await response.json();
-  console.log('new auth token received: ' + json);
-  return json;
+  var jsonResponse = await response.json();
+  var accessToken = jsonResponse.access_token;
+  return accessToken;
 };
 
 export function getAlbumTracks(album) {
