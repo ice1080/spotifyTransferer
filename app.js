@@ -69,7 +69,7 @@ app.get('/login', function(req, res) {
   res.cookie(stateKey, state);
 
   // your application requests authorization
-  var scope = 'user-read-private user-read-email';
+  var scope = 'user-read-private user-read-email playlist-modify user-library-modify user-library-read';
   res.redirect('https://accounts.spotify.com/authorize?' +
     querystring.stringify({
       response_type: 'code',
@@ -188,9 +188,8 @@ app.get('/make_transfer', async function(req, res) {
 
   var savedAlbums = await getSavedAlbums(access_token, profileId);
 
-  // temporary test:
+  // todo remove this temporary test
   var testAlbum = savedAlbums[0];
-  // console.log(getAlbumTracks(testAlbum));
 
   transferTracksToPlaylist(access_token, getAlbumTracks(testAlbum), playlistId);
   
