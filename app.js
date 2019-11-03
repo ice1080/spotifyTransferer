@@ -199,31 +199,30 @@ app.get('/make_transfer', async function(req, res) {
 
   var savedAlbums = await getSavedAlbums(access_token, profileId);
 
+  while(savedAlbums.length > 10) {
+
+    var trackTotal = 0;
+    savedAlbums.forEach(async function(album) {
+      logAlbum(album);
+      var albumId = getAlbumId(album);
+      var albumTracks = getAlbumTracks(album);
+      await transferTracksToPlaylist(access_token, albumTracks, playlistId);
+
+      await removeTracks(access_token, profileId, albumTracks);
+      trackTotal += albumTracks.length;
+      logTrackTotal(trackTotal);
+      await sleep(1000);
+    });
+
+    await sleep(1000);
+    await removeAlbums(access_token, profileId, savedAlbums);
+    logAlbumTotal(savedAlbums.length);
+
+    await sleep(1000);
+    savedAlbums = await.getSavedAlbums(access_token, profileId);
+  }
 
   
-  var albumTotal = 0;
-  var trackTotal = 0;
-  var savedAlbumTracks = [];
-  savedAlbums.forEach(async function(album) {
-    logAlbum(album);
-    var albumId = getAlbumId(album);
-    var albumTracks = getAlbumTracks(album);
-    await transferTracksToPlaylist(access_token, albumTracks, playlistId);
-
-    // await removeAlbumTracksFromLibrary(access_token, profileId, albumTracks);
-    await removeTracks(access_token, profileId, albumTracks);
-    trackTotal += albumTracks.length;
-    logTrackTotal(trackTotal);
-    sleep(1000);
-
-    // await removeAlbumFromLibrary(access_token, profileId, albumId);
-    // albumTotal += 1
-    // logAlbumTotal(albumTotal);
-  });
-
-  await sleep(1000);
-  await removeAlbums(access_token, profileId, savedAlbums);
-
 });
 
 
