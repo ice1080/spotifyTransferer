@@ -9,15 +9,26 @@ var cors = require('cors');
 var querystring = require('querystring');
 var cookieParser = require('cookie-parser');
 var fs = require('fs');
-import { refreshToken,
-         getSavedAlbums,
-         getPlaylistId,
-         getAlbumTracks,
-         transferTracksToPlaylist,
-         doesLibraryContainTrack,
-         removeTrackFromLibrary,
-         removeAlbumFromLibrary
-       } from './SpotifyApiHelper';
+import {
+  logPlaylist,
+  logAlbum,
+  logAlbumTotal,
+  logTrackTotal,
+  getQueryParamsString,
+  getPlaylistId,
+  getSavedAlbums,
+  refreshToken,
+  getAlbumId,
+  getAlbumTracks,
+  transferTracksToPlaylist,
+  doesLibraryContainTrack,
+  removeAlbumFromLibrary,
+  removeTrackFromLibrary,
+  removeAlbumTracksFromLibrary,
+  removeTracks,
+  removeAlbums,
+  sleep,
+} from './SpotifyApiHelper';
 
 var client_id = 'NOT_SET';
 var client_secret = 'NOT_SET';
@@ -184,40 +195,34 @@ app.get('/make_transfer', async function(req, res) {
   
   var playlistId = await getPlaylistId(access_token, profileId, preferred_playlist_name);
 
-  console.log("Playlist '" + preferred_playlist_name + "' id: " + playlistId);
+  logPlaylist(preferred_playlist_name, playlistId);
 
   var savedAlbums = await getSavedAlbums(access_token, profileId);
 
-  // todo remove this temporary test
-  // var testAlbum = savedAlbums[0];
-  // var testAlbumId = testAlbum.album.id;
-  // // console.log('\nremoveAlbumFromLibrary succes: ', await removeAlbumFromLibrary(access_token, profileId, testAlbumId));
-  // var albumTracks = getAlbumTracks(testAlbum);
-  // var testTrackId = albumTracks[0].id;
-  // console.log('\ntest track id: ', testTrackId);
-  // console.log('\ndoesLibraryContainTrack: ', await doesLibraryContainTrack(access_token, profileId, testTrackId));
-  // console.log('\ntrack removal success: ', await removeTrackFromLibrary(access_token, profileId, testTrackId));
-  // // transferTracksToPlaylist(access_token, albumTracks, playlistId);
-
 
   
-  // savedAlbums.forEach(function(album) {
-  //   var albumId = getAlbumId(album);
-  //   var albumTracks = getAlbumTracks(album);
-  //   if (transferTracksToPlaylist(access_token, albumTracks, playlistId)) {
-      
-  //   } else {
+  var albumTotal = 0;
+  var trackTotal = 0;
+  var savedAlbumTracks = [];
+  savedAlbums.forEach(async function(album) {
+    logAlbum(album);
+    var albumId = getAlbumId(album);
+    var albumTracks = getAlbumTracks(album);
+    await transferTracksToPlaylist(access_token, albumTracks, playlistId);
 
-  //   }
-    
+    // await removeAlbumTracksFromLibrary(access_token, profileId, albumTracks);
+    await removeTracks(access_token, profileId, albumTracks);
+    trackTotal += albumTracks.length;
+    logTrackTotal(trackTotal);
+    sleep(1000);
 
-  // // todo for each track, transfer to collection, determine if already saved, and unsave
-  // // print each album and artist
-  // // print number of tracks transferred and number of albums transferred
-  // // todo then unsave the album
-  
-  //   });
-  // });
+    // await removeAlbumFromLibrary(access_token, profileId, albumId);
+    // albumTotal += 1
+    // logAlbumTotal(albumTotal);
+  });
+
+  await sleep(1000);
+  await removeAlbums(access_token, profileId, savedAlbums);
 
 });
 

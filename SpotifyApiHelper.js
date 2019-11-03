@@ -1,8 +1,53 @@
 var fetch = require('node-fetch');
 var FormData = require('form-data');
+var log4js = require('log4js');
+
+log4js.configure({
+  appenders: {
+    everything: { type: 'file', filename: 'transferer.log', maxLogSize: 10485760, backups: 1000, compress: true }
+  },
+  categories: {
+    default: { appenders: [ 'everything' ], level: 'debug'}
+  }
+});
+var logger = log4js.getLogger();
+logger.level = 'debug';
 
 const tokenUrl = 'https://accounts.spotify.com/api/token';
 const api = 'https://api.spotify.com/v1/';
+
+function getAlbumArtists(album) {
+  var artists = '';
+  album.album.artists.forEach(function(artist) {
+    artists += artist.name + ', ';
+  });
+  return artists.substring(0, artists.length - 2);
+};
+
+function getAlbumString(album) {
+  return album.album.name + ' by ' + getAlbumArtists(album) + ' (id: ' + album.album.id + ')';
+};
+
+export function logPlaylist(playlistName, playlistId) {
+  logger.debug("Playlist '" + playlistName + "' id: " + playlistId);
+};
+
+export function logAlbum(album) {
+  logger.debug('transferring: ' + getAlbumString(album));
+};
+
+export function logAlbumTotal(total) {
+  logger.debug('total albums transferred: ' + total);
+};
+
+export function logTrackTotal(total) {
+  logger.debug('total tracks transferred: ' + total);
+};
+
+export function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+};
+
 
 export function getQueryParamsString(dataMap) {
   var queryString = '?';
@@ -97,6 +142,12 @@ export async function doesLibraryContainTrack(access_token, profileId, trackId) 
   return json[0];
 };
 
+export async function removeAlbumTracksFromLibrary(access_token, profileId, albumTracks) {
+  albumTracks.forEach(async function(track) {
+    await removeTrackFromLibrary(access_token, profileId, track.id);
+  });
+};
+
 export async function removeTrackFromLibrary(access_token, profileId, trackId) {
   // DELETE /users/{profile_id}/tracks?ids=id1,id2
   const response = await fetch(api + 'users/' + profileId + '/tracks?ids=' + trackId, {
@@ -105,7 +156,7 @@ export async function removeTrackFromLibrary(access_token, profileId, trackId) {
       Authorization: 'Bearer ' + access_token
     }
   });
-  return response.status == 200;
+  return testResponse(response);
 };
 
 export async function removeAlbumFromLibrary(access_token, profileId, albumId) {
@@ -116,6 +167,46 @@ export async function removeAlbumFromLibrary(access_token, profileId, albumId) {
       Authorization: 'Bearer ' + access_token
     }
   });
-  return response.status == 200;
+  return testResponse(response);
 };
 
+export async function removeTracks(access_token, profileId, tracks) {
+  var url = api + 'users/' + profileId + '/tracks';
+  var trackIds = [];
+  tracks.forEach(function(track) {
+    trackIds.push(track.id);
+  });
+  const response = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      Authorization: 'Bearer ' + access_token
+    },
+    body: JSON.stringify(trackIds)
+  });
+};
+
+export async function removeAlbums(access_token, profileId, albums) {
+  var url = api + 'users/' + profileId + '/albums';
+  var albumIds = [];
+  albums.forEach(function(album) {
+    albumIds.push(getAlbumId(album));
+  });
+  const response = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      Authorization: 'Bearer ' + access_token
+    },
+    body: JSON.stringify(albumIds)
+  });
+};
+
+function testResponse(response) {
+  if (response.status !== 200) {
+    if (response.status === 429) {
+      console.log('too many requests: ', response.headers);
+    } else {
+      console.log(response);
+    }
+  }
+  return response.status == 200;
+};
