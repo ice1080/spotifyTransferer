@@ -183,6 +183,7 @@ export async function removeTracks(access_token, profileId, tracks) {
     },
     body: JSON.stringify(trackIds)
   });
+  return testResponse;
 };
 
 export async function removeAlbums(access_token, profileId, albums) {
@@ -198,6 +199,7 @@ export async function removeAlbums(access_token, profileId, albums) {
     },
     body: JSON.stringify(albumIds)
   });
+  return testResponse;
 };
 
 function testResponse(response) {
