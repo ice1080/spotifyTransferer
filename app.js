@@ -1,6 +1,10 @@
 /**
- * This is a simple node.js script that does some stuff
- * with your playlists.
+ * This is a simple node.js script that transfers songs from saved albums
+ * into a playlist of choice, and then unsaves the albums and songs.
+ * 
+ * To use, run the app with `npm start`, navigate to http://localhost:8888/,
+ * and click Make Transfer. It only does 20 albums at a time, so has to be 
+ * clicked a bunch. Logs are stored in "transferer.log".
  */
 
 var express = require('express'); // Express web server framework
@@ -191,6 +195,7 @@ app.get('/make_transfer', async function(req, res) {
   var preferred_playlist_name = 'Collection3';
 
   // refresh the token
+  // todo perhaps remove this, could be what's slowing everything down
   access_token = await refreshToken(getAuthString(), refresh_token);
   
   var playlistId = await getPlaylistId(access_token, profileId, preferred_playlist_name);
