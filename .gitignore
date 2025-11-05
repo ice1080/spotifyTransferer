@@ -1,5 +1,13 @@
+.idea/
+
 clientId.txt
 clientSecret.txt
+
 node_modules/
+
 *.log
 *~
+
+# TypeScript build output
+dist/
+*.js.map
