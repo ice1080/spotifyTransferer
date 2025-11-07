@@ -81,15 +81,15 @@
       </form>
       <hr>
       <form id="favorite-albums-form" method="GET" action="/favorite_albums_from_playlist">
-        <h3>Favorite albums from playlist</h3>
+        <h3>Save albums from playlist (50 tracks at a time)</h3>
         <div class="form-group">
-          <label for="playlist-id">Playlist ID:</label>
-          <input type="text" class="form-control" id="playlist-id" name="playlist_id" required>
+          <label for="playlist-name">Playlist Name:</label>
+          <input type="text" class="form-control" id="playlist-name" name="playlist_name" required>
         </div>
         <input type="hidden" name="access_token" value="{{access_token}}">
         <input type="hidden" name="refresh_token" value="{{refresh_token}}">
         <input type="hidden" name="profile_id" value="{{profile_id}}">
-        <button type="submit" class="btn btn-default">Favorite albums from playlist</button>
+        <button type="submit" class="btn btn-default">Save albums from playlist</button>
       </form>
     </script>
 

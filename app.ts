@@ -28,7 +28,7 @@ const client_secret: string = process.env.SPOTIFY_TRANSFER_CLIENT_SECRET || 'NOT
 const redirect_uri: string = 'http://localhost:8888/callback';
 
 function getAuthString(): string {
-  return Buffer.from(client_id + ':' + client_secret).toString('base64');
+  return Buffer.from(`${client_id}:${client_secret}`).toString('base64');
 }
 
 /**
@@ -96,7 +96,7 @@ app.get('/callback', async function(req: Request, res: Response) {
     const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {
       method: 'POST',
       headers: {
-        'Authorization': 'Basic ' + getAuthString(),
+        'Authorization': `Basic ${getAuthString()}`,
         'Content-Type': 'application/x-www-form-urlencoded'
       },
       body: tokenParams.toString()
@@ -118,7 +118,7 @@ app.get('/callback', async function(req: Request, res: Response) {
     // Fetch user profile (optional, not used but kept for compatibility)
     try {
       await fetch('https://api.spotify.com/v1/me', {
-        headers: { 'Authorization': 'Bearer ' + access_token }
+        headers: { 'Authorization': `Bearer ${access_token}` }
       });
     } catch (error) {
       // Silently ignore profile fetch errors
@@ -152,7 +152,7 @@ app.get('/refresh_token', async function(req: Request, res: Response) {
     const response = await fetch('https://accounts.spotify.com/api/token', {
       method: 'POST',
       headers: {
-        'Authorization': 'Basic ' + authString,
+        'Authorization': `Basic ${authString}`,
         'Content-Type': 'application/x-www-form-urlencoded'
       },
       body: tokenParams.toString()
@@ -180,25 +180,23 @@ app.get('/favorites_to_playlist', async function(req: Request, res: Response) {
   const access_token = req.query.access_token as string;
   const refresh_token = req.query.refresh_token as string;
   const profileId = req.query.profile_id as string;
-
-  const preferred_playlist_name = req.query.playlist_name as string;
+  const playlist_name = req.query.playlist_name as string;
 
   // refresh the token
   // todo perhaps remove this, could be what's slowing everything down
   const refreshed_access_token = await refreshToken(getAuthString(), refresh_token);
   
   const spotifyHelper = new SpotifyApiHelper(refreshed_access_token, profileId);
-  const playlistId = await spotifyHelper.getPlaylistId(preferred_playlist_name);
+  const playlistId = await spotifyHelper.getPlaylistId(playlist_name);
 
-  logPlaylist(preferred_playlist_name, playlistId);
+  logPlaylist(playlist_name, playlistId);
 
   const savedAlbums = await spotifyHelper.getSavedAlbums();
 
   let trackTotal = 0;
   for (const album of savedAlbums) {
     logAlbum(album);
-    const albumId = spotifyHelper.getAlbumId(album);
-    const albumTracks = spotifyHelper.getAlbumTracks(album);
+    const albumTracks = spotifyHelper.getSavedAlbumTracks(album);
     await spotifyHelper.transferTracksToPlaylist(albumTracks, playlistId);
 
     await spotifyHelper.removeTracks(albumTracks);
@@ -217,13 +215,37 @@ app.get('/favorite_albums_from_playlist', async function(req: Request, res: Resp
   const access_token = req.query.access_token as string;
   const refresh_token = req.query.refresh_token as string;
   const profileId = req.query.profile_id as string;
-  const playlist_id = req.query.playlist_id as string;
+  const playlist_name = req.query.playlist_name as string;
 
   // refresh the token
   const refreshed_access_token = await refreshToken(getAuthString(), refresh_token);
   
   const spotifyHelper = new SpotifyApiHelper(refreshed_access_token, profileId);
-  
+  const playlistId = await spotifyHelper.getPlaylistId(playlist_name);
+  logPlaylist(playlist_name, playlistId);
+
+  console.log('attempting to transfer albums from the next 50 tracks in the playlist');
+  const playlistTracks = await spotifyHelper.getPlaylistTracks(playlistId);
+
+  // TODO keep track of removed tracks/albums so you don't double query for a bunch of the tracks
+  const savedAlbums: Record<string, boolean> = {};
+  for (const track of playlistTracks) {
+    if (savedAlbums[track.album.id] === true) {
+      continue;
+    }
+    const isSaved = await spotifyHelper.isAlbumSaved(track.album.id);
+    if (!isSaved) {
+      console.log(`add album to library here: ${track.album.id}`);
+      // await spotifyHelper.addAlbumToLibrary(track.album.id);
+    }
+    savedAlbums[track.album.id] = isSaved;
+    
+    const albumTracks = await spotifyHelper.getAlbumTracks(track.album.id);
+    console.log(`remove album tracks from playlist: ${albumTracks.map(track => track.id).join(',')}`)
+    // spotifyHelper.removeAlbumTracksFromPlaylist(albumTracks, playlistId);
+  }
+
+  // TODO add more logging
   // Placeholder endpoint for favoriting albums from a playlist
   // TODO: Implement functionality to favorite albums from a playlist
   res.send({ status: 'placeholder - not yet implemented' });
