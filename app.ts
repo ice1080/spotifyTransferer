@@ -3,7 +3,7 @@
  * into a playlist of choice, and then unsaves the albums and songs.
  * 
  * To use, run the app with `npm start`, navigate to http://localhost:8888/,
- * and click Make Transfer. It only does 20 albums at a time, so has to be 
+ * and click Transfer favorites to playlist. It only does 20 albums at a time, so has to be 
  * clicked a bunch. Logs are stored in "transferer.log".
  */
 
@@ -13,19 +13,13 @@ import cors from 'cors';
 import querystring from 'querystring';
 import cookieParser from 'cookie-parser';
 import {
-  getAlbumId,
-  getAlbumTracks,
-  getPlaylistId,
-  getSavedAlbums,
+  SpotifyApiHelper,
   logAlbum,
   logAlbumTotal,
   logPlaylist,
   logTrackTotal,
   refreshToken,
-  removeAlbums,
-  removeTracks,
-  sleep,
-  transferTracksToPlaylist
+  sleep
 } from './SpotifyApiHelper';
 import path from 'path';
 
@@ -182,41 +176,57 @@ app.get('/refresh_token', async function(req: Request, res: Response) {
 
 
 
-app.get('/make_transfer', async function(req: Request, res: Response) {
+app.get('/favorites_to_playlist', async function(req: Request, res: Response) {
   const access_token = req.query.access_token as string;
   const refresh_token = req.query.refresh_token as string;
   const profileId = req.query.profile_id as string;
 
-  // todo change this to an input variable on the screen
-  const preferred_playlist_name = 'Collection3';
+  const preferred_playlist_name = req.query.playlist_name as string;
 
   // refresh the token
   // todo perhaps remove this, could be what's slowing everything down
   const refreshed_access_token = await refreshToken(getAuthString(), refresh_token);
   
-  const playlistId = await getPlaylistId(refreshed_access_token, profileId, preferred_playlist_name);
+  const spotifyHelper = new SpotifyApiHelper(refreshed_access_token, profileId);
+  const playlistId = await spotifyHelper.getPlaylistId(preferred_playlist_name);
 
   logPlaylist(preferred_playlist_name, playlistId);
 
-  const savedAlbums = await getSavedAlbums(refreshed_access_token, profileId);
+  const savedAlbums = await spotifyHelper.getSavedAlbums();
 
   let trackTotal = 0;
   for (const album of savedAlbums) {
     logAlbum(album);
-    const albumId = getAlbumId(album);
-    const albumTracks = getAlbumTracks(album);
-    await transferTracksToPlaylist(refreshed_access_token, albumTracks, playlistId);
+    const albumId = spotifyHelper.getAlbumId(album);
+    const albumTracks = spotifyHelper.getAlbumTracks(album);
+    await spotifyHelper.transferTracksToPlaylist(albumTracks, playlistId);
 
-    await removeTracks(refreshed_access_token, profileId, albumTracks);
+    await spotifyHelper.removeTracks(albumTracks);
     trackTotal += albumTracks.length;
     logTrackTotal(trackTotal);
   }
 
   await sleep(1000);
-  await removeAlbums(refreshed_access_token, profileId, savedAlbums);
+  await spotifyHelper.removeAlbums(savedAlbums);
   logAlbumTotal(savedAlbums.length);
   
   res.send({ status: 'completed' });
+});
+
+app.get('/favorite_albums_from_playlist', async function(req: Request, res: Response) {
+  const access_token = req.query.access_token as string;
+  const refresh_token = req.query.refresh_token as string;
+  const profileId = req.query.profile_id as string;
+  const playlist_id = req.query.playlist_id as string;
+
+  // refresh the token
+  const refreshed_access_token = await refreshToken(getAuthString(), refresh_token);
+  
+  const spotifyHelper = new SpotifyApiHelper(refreshed_access_token, profileId);
+  
+  // Placeholder endpoint for favoriting albums from a playlist
+  // TODO: Implement functionality to favorite albums from a playlist
+  res.send({ status: 'placeholder - not yet implemented' });
 });
 
 

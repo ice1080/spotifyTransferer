@@ -86,41 +86,12 @@ export function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-export function getQueryParamsString(dataMap: Record<string, string>): string {
+function getQueryParamsString(dataMap: Record<string, string>): string {
   let queryString = '?';
   Object.keys(dataMap).forEach(function(key: string) {
     queryString += key + '=' + dataMap[key] + '&';
   });
   return queryString;
-}
-
-export async function getPlaylistId(access_token: string, profile_id: string, playlistName: string): Promise<string> {
-  const response = await fetch(api + 'users/' + profile_id + '/playlists', {
-    headers: { Authorization: 'Bearer ' + access_token }
-  });
-  const json: PlaylistResponse = await response.json() as PlaylistResponse;
-
-  let playlistId = '';
-  
-  let i: string;
-  for (i in json.items) {
-    const item = json.items[i];
-    
-    if (item.name === playlistName) {
-      playlistId = item.id;
-    }
-  }
-
-  return playlistId;
-}
-
-export async function getSavedAlbums(access_token: string, profile_id: string): Promise<SavedAlbum[]> {
-  const response = await fetch(api + 'users/' + profile_id + '/albums', {
-    headers: { Authorization: 'Bearer ' + access_token }
-  });
-  const json: UserAlbumsResponse = await response.json() as UserAlbumsResponse;
-
-  return json.items;
 }
 
 export async function refreshToken(authString: string, refreshToken: string): Promise<string> {
@@ -143,100 +114,6 @@ export async function refreshToken(authString: string, refreshToken: string): Pr
   return accessToken;
 }
 
-export function getAlbumId(album: SavedAlbum): string {
-  return album.album.id;
-}
-
-export function getAlbumTracks(album: SavedAlbum): Track[] {
-  return album.album.tracks.items;
-}
-
-export async function transferTracksToPlaylist(access_token: string, trackList: Track[], playlistId: string): Promise<boolean> {
-  // POST /playlists/{playlist_id}/tracks
-  // body {"uris": ["spotifyUri1","spotifyUri2"]}
-  const response = await fetch(api + 'playlists/' + playlistId + '/tracks', {
-    method: 'POST',
-    headers: {
-      Authorization: 'Bearer ' + access_token,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({uris: trackList.map(track => track.uri)}),
-  });
-  return response.status === 200;
-}
-
-export async function doesLibraryContainTrack(access_token: string, profileId: string, trackId: string): Promise<boolean> {
-  // note that this function is not really necessary
-  // GET /users/{profile_id}/tracks/contains?ids=id1,id2
-  const response = await fetch(api + 'users/' + profileId + '/tracks/contains?ids=' + trackId, {
-    headers: {
-      Authorization: 'Bearer ' + access_token,
-    },
-  });
-  const json: boolean[] = await response.json() as boolean[];
-  return json[0];
-}
-
-export async function removeAlbumTracksFromLibrary(access_token: string, profileId: string, albumTracks: Track[]): Promise<void> {
-  albumTracks.forEach(async function(track: Track) {
-    await removeTrackFromLibrary(access_token, profileId, track.id);
-  });
-}
-
-export async function removeTrackFromLibrary(access_token: string, profileId: string, trackId: string): Promise<boolean> {
-  // DELETE /users/{profile_id}/tracks?ids=id1,id2
-  const response = await fetch(api + 'users/' + profileId + '/tracks?ids=' + trackId, {
-    method: 'DELETE',
-    headers: {
-      Authorization: 'Bearer ' + access_token
-    }
-  });
-  return testResponse(response);
-}
-
-export async function removeAlbumFromLibrary(access_token: string, profileId: string, albumId: string): Promise<boolean> {
-  // DELETE /users/{profile_id}/albums?ids=id1
-  const response = await fetch(api + 'users/' + profileId + '/albums?ids=' + albumId, {
-    method: 'DELETE',
-    headers: {
-      Authorization: 'Bearer ' + access_token
-    }
-  });
-  return testResponse(response);
-}
-
-export async function removeTracks(access_token: string, profileId: string, tracks: Track[]): Promise<boolean> {
-  const url = api + 'users/' + profileId + '/tracks';
-  const trackIds: string[] = [];
-  tracks.forEach(function(track: Track) {
-    trackIds.push(track.id);
-  });
-  const response = await fetch(url, {
-    method: 'DELETE',
-    headers: {
-      Authorization: 'Bearer ' + access_token
-    },
-    body: JSON.stringify(trackIds)
-  });
-  return testResponse(response);
-}
-
-export async function removeAlbums(access_token: string, profileId: string, albums: SavedAlbum[]): Promise<boolean> {
-  const url = api + 'users/' + profileId + '/albums';
-  const albumIds: string[] = [];
-  albums.forEach(function(album: SavedAlbum) {
-    albumIds.push(getAlbumId(album));
-  });
-  const response = await fetch(url, {
-    method: 'DELETE',
-    headers: {
-      Authorization: 'Bearer ' + access_token
-    },
-    body: JSON.stringify(albumIds)
-  });
-  return testResponse(response);
-}
-
 function testResponse(response: fetch.Response): boolean {
   if (response.status !== 200) {
     if (response.status === 429) {
@@ -248,3 +125,135 @@ function testResponse(response: fetch.Response): boolean {
   return response.status === 200;
 }
 
+export class SpotifyApiHelper {
+  private access_token: string;
+  private profile_id: string;
+
+  constructor(access_token: string, profile_id: string) {
+    this.access_token = access_token;
+    this.profile_id = profile_id;
+  }
+
+  async getPlaylistId(playlistName: string): Promise<string> {
+    const response = await fetch(api + 'users/' + this.profile_id + '/playlists', {
+      headers: { Authorization: 'Bearer ' + this.access_token }
+    });
+    const json: PlaylistResponse = await response.json() as PlaylistResponse;
+
+    let playlistId = '';
+    
+    let i: string;
+    for (i in json.items) {
+      const item = json.items[i];
+      
+      if (item.name === playlistName) {
+        playlistId = item.id;
+      }
+    }
+
+    return playlistId;
+  }
+
+  async getSavedAlbums(): Promise<SavedAlbum[]> {
+    const response = await fetch(api + 'users/' + this.profile_id + '/albums', {
+      headers: { Authorization: 'Bearer ' + this.access_token }
+    });
+    const json: UserAlbumsResponse = await response.json() as UserAlbumsResponse;
+
+    return json.items;
+  }
+
+  getAlbumId(album: SavedAlbum): string {
+    return album.album.id;
+  }
+
+  getAlbumTracks(album: SavedAlbum): Track[] {
+    return album.album.tracks.items;
+  }
+
+  async transferTracksToPlaylist(trackList: Track[], playlistId: string): Promise<boolean> {
+    // POST /playlists/{playlist_id}/tracks
+    // body {"uris": ["spotifyUri1","spotifyUri2"]}
+    const response = await fetch(api + 'playlists/' + playlistId + '/tracks', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + this.access_token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({uris: trackList.map(track => track.uri)}),
+    });
+    return response.status === 200;
+  }
+
+  async doesLibraryContainTrack(trackId: string): Promise<boolean> {
+    // note that this function is not really necessary
+    // GET /users/{profile_id}/tracks/contains?ids=id1,id2
+    const response = await fetch(api + 'users/' + this.profile_id + '/tracks/contains?ids=' + trackId, {
+      headers: {
+        Authorization: 'Bearer ' + this.access_token,
+      },
+    });
+    const json: boolean[] = await response.json() as boolean[];
+    return json[0];
+  }
+
+  async removeAlbumTracksFromLibrary(albumTracks: Track[]): Promise<void> {
+    for (const track of albumTracks) {
+      await this.removeTrackFromLibrary(track.id);
+    }
+  }
+
+  async removeTrackFromLibrary(trackId: string): Promise<boolean> {
+    // DELETE /users/{profile_id}/tracks?ids=id1,id2
+    const response = await fetch(api + 'users/' + this.profile_id + '/tracks?ids=' + trackId, {
+      method: 'DELETE',
+      headers: {
+        Authorization: 'Bearer ' + this.access_token
+      }
+    });
+    return testResponse(response);
+  }
+
+  async removeAlbumFromLibrary(albumId: string): Promise<boolean> {
+    // DELETE /users/{profile_id}/albums?ids=id1
+    const response = await fetch(api + 'users/' + this.profile_id + '/albums?ids=' + albumId, {
+      method: 'DELETE',
+      headers: {
+        Authorization: 'Bearer ' + this.access_token
+      }
+    });
+    return testResponse(response);
+  }
+
+  async removeTracks(tracks: Track[]): Promise<boolean> {
+    const url = api + 'users/' + this.profile_id + '/tracks';
+    const trackIds: string[] = [];
+    tracks.forEach(function(track: Track) {
+      trackIds.push(track.id);
+    });
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        Authorization: 'Bearer ' + this.access_token
+      },
+      body: JSON.stringify(trackIds)
+    });
+    return testResponse(response);
+  }
+
+  async removeAlbums(albums: SavedAlbum[]): Promise<boolean> {
+    const url = api + 'users/' + this.profile_id + '/albums';
+    const albumIds: string[] = [];
+    albums.forEach((album: SavedAlbum) => {
+      albumIds.push(this.getAlbumId(album));
+    });
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        Authorization: 'Bearer ' + this.access_token
+      },
+      body: JSON.stringify(albumIds)
+    });
+    return testResponse(response);
+  }
+}

@@ -68,7 +68,29 @@
 
     <script id="controls-template" type="text/x-handlebars-template">
       <h2>Controls</h2>
-      <button class="btn btn-default" id="make-transfer">Make Transfer</button>
+      <form id="transfer-favorites-form" method="GET" action="/favorites_to_playlist">
+        <h3>Transfer favorites to playlist</h3>
+        <div class="form-group">
+          <label for="playlist-name">Playlist Name:</label>
+          <input type="text" class="form-control" id="playlist-name" name="playlist_name" required>
+        </div>
+        <input type="hidden" name="access_token" value="{{access_token}}">
+        <input type="hidden" name="refresh_token" value="{{refresh_token}}">
+        <input type="hidden" name="profile_id" value="{{profile_id}}">
+        <button type="submit" class="btn btn-default">Transfer favorites to playlist</button>
+      </form>
+      <hr>
+      <form id="favorite-albums-form" method="GET" action="/favorite_albums_from_playlist">
+        <h3>Favorite albums from playlist</h3>
+        <div class="form-group">
+          <label for="playlist-id">Playlist ID:</label>
+          <input type="text" class="form-control" id="playlist-id" name="playlist_id" required>
+        </div>
+        <input type="hidden" name="access_token" value="{{access_token}}">
+        <input type="hidden" name="refresh_token" value="{{refresh_token}}">
+        <input type="hidden" name="profile_id" value="{{profile_id}}">
+        <button type="submit" class="btn btn-default">Favorite albums from playlist</button>
+      </form>
     </script>
 
     <script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0-alpha.1/handlebars.min.js"></script>
@@ -118,8 +140,6 @@
               refresh_token: refresh_token
             });
 
-            controlsPlaceholder.innerHTML = controlsTemplate();
-
             $.ajax({
                 url: 'https://api.spotify.com/v1/me',
                 headers: {
@@ -127,6 +147,13 @@
                 },
                 success: function(response) {
                   userProfilePlaceholder.innerHTML = userProfileTemplate(response);
+
+                  // Render controls with necessary data
+                  controlsPlaceholder.innerHTML = controlsTemplate({
+                    access_token: access_token,
+                    refresh_token: refresh_token,
+                    profile_id: response.id
+                  });
 
                   $('#login').hide();
                   $('#loggedin').show();
@@ -150,21 +177,6 @@
                 access_token: access_token,
                 refresh_token: refresh_token
               });
-            });
-          }, false);
-
-          document.getElementById('make-transfer').addEventListener('click', function() {
-            var profile_id = $('dt:contains(Id)').next().text();
-            
-            $.ajax({
-              url: '/make_transfer',
-              data: {
-                'access_token': access_token,
-                'refresh_token': refresh_token,
-                'profile_id': profile_id
-              }
-            }).done(function(data) {
-              console.log(data);
             });
           }, false);
         }
